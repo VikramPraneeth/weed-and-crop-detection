@@ -1,1 +1,1 @@
-# weed-and-crop-detection
+# weed-and-crop-detection project
