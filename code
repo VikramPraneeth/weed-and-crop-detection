@@ -1,0 +1,135 @@
+1. Install Required Libraries
+
+bash:
+
+pip install tensorflow scikit-learn matplotlib
+
+
+
+
+2. Import Libraries
+
+python:
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from tensorflow.keras import layers, models
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+
+
+
+
+3. Data Preparation
+
+python:
+
+# Assuming you have a dataset structure with 'crop' and 'weed' folders
+crop_dir = 'path/to/crop_images'
+weed_dir = 'path/to/weed_images'
+
+# Load and preprocess images
+def load_images(directory, label):
+    images = []
+    labels = []
+    for filename in os.listdir(directory):
+        if filename.endswith('.jpeg'):
+            img_path = os.path.join(directory, filename)
+            img = plt.imread(img_path) / 255.0  # Normalize pixel values
+            images.append(img)
+            labels.append(label)
+    return images, labels
+
+crop_images, crop_labels = load_images(crop_dir, 0)
+weed_images, weed_labels = load_images(weed_dir, 1)
+
+# Combine crop and weed data
+all_images = crop_images + weed_images
+all_labels = crop_labels + weed_labels
+
+# Split the dataset into training and testing sets
+train_data, test_data, train_labels, test_labels = train_test_split(
+    np.array(all_images), np.array(all_labels), test_size=0.2, random_state=42
+)
+
+
+
+  
+4. Model Definition
+
+
+python:
+
+model = models.Sequential()
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(512, 512, 3)))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.Flatten())
+model.add(layers.Dense(128, activation='relu'))
+model.add(layers.Dense(1, activation='sigmoid'))
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+
+  
+  
+5. Data Augmentation
+
+python:
+
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True
+)
+
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+train_generator = train_datagen.flow(train_data, train_labels, batch_size=32)
+test_generator = test_datagen.flow(test_data, test_labels, batch_size=32)
+
+
+
+  
+  
+6. Model Training
+
+python:
+
+history = model.fit(
+    train_generator,
+    epochs=10,
+    validation_data=test_generator
+)
+
+
+
+  
+  
+7. Evaluate Model Performance
+
+python:
+
+# Plot training history
+plt.plot(history.history['accuracy'], label='accuracy')
+plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.ylim([0, 1])
+plt.legend(loc='lower right')
+plt.show()
+
+# Evaluate on the test set
+test_loss, test_acc = model.evaluate(test_generator, verbose=2)
+print(f'\nTest accuracy: {test_acc}')
+8. Save Model
+python
+Copy code
+# Save the model for future use
+model.save('crop_weed_detection_model.h5')
